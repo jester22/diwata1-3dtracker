@@ -1,0 +1,105 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<script src="https://www.webglearth.com/v2/api.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
+	<script>
+	function initialize() {
+		var options = {atmosphere: true, center: [0, 0], zoom: 0};
+		var earth = new WE.map('earth_div', options);
+		var setView = false;
+		WE.tileLayer('https://tileserver.maptiler.com/nasa/{z}/{x}/{y}.jpg', {
+			minZoom: 0,
+			maxZoom: 5,
+			attribution: 'NASA',
+			dragging: false
+		}).addTo(earth);
+		var marker = WE.marker([], 'https://tracker.phl-microsat.upd.edu.ph/static/images/diwata.png', 25, 25)
+			.addTo(earth);
+		function update() {
+			fetch('https://api.orbit.phl-microsat.xyz/diwata1?_='+ Date.now())
+				.then((res) => {
+					return res.json();
+				})
+				.then((data) => {
+					if(!setView) {
+						earth.setView(data.geometry.coordinates.reverse());
+						earth.panTo(data.geometry.coordinates.reverse());
+						setView = true;
+					}
+					marker.setLatLng(data.geometry.coordinates.reverse());
+					document.getElementById('time').innerHTML = moment(data.properties.timestamp).format('MMM D, YYYY h:mm:ss a');
+					document.getElementById('lat').innerHTML = data.geometry.coordinates[1];
+					document.getElementById('long').innerHTML = data.geometry.coordinates[0];
+					document.getElementById('elevation').innerHTML = data.properties.elevation;
+				})
+				.catch((err) => {
+					console.log(err);
+				})
+		}
+		function renderPath() {
+			fetch('https://api.orbit.phl-microsat.xyz/diwata1-path.geojson?hours=1')
+			.then((res) => {
+				return res.json();
+			})
+			.then((data) => {
+				for (let index = 1; index < data.features.length; index++) {
+					if(index % 3 !== 0) {
+						continue;
+					}
+					const o = data.features[index];
+					var marker = WE.marker(o.geometry.coordinates.reverse(), '/diwata-opaque.png', 25, 25)
+					.addTo(earth);
+				}
+			})
+			.catch((err) => {
+				console.log(err);
+			})
+		}
+		update();
+		renderPath();
+		setInterval(update, 1000 * 2);
+	}
+	window.onload  = function() {
+		initialize();
+	}
+	</script>
+	<style>
+		html, body{padding: 0; margin: 0;}
+		#earth_div{top: 0; right: 0; bottom: 0; left: 0; position: absolute !important;}
+		.we-pm-icon {
+			background-size: cover;
+			background-repeat: no-repeat;
+		}
+		#details {
+			background-color: ghostwhite;
+			margin-left: 32px;
+			margin-top: 32px;
+			width: 390px;
+			padding: 32px;
+		}
+		#details .title {
+			font-size: 32px;
+		}
+		#details .label {
+			font-size: 16px;
+			opacity: 0.7;
+		}
+	</style>
+	<title>Diwata 1 - Tracker 3D</title>
+</head>
+<body>
+	<div id="details">
+		<div class="title">POSITION</div>
+		<div class="label">Philippine Standard Time</div>
+		<div id="time"></div>
+		<div class="label">Latitude</div>
+		<div id="lat"></div>
+		<div class="label">Longitude</div>
+		<div id="long"></div>
+		<div class="label">Elevation</div>
+		<div id="elevation"></div>
+	</div>
+	<div id="earth_div"></div>
+</body>
+</html>
