@@ -23,7 +23,6 @@
 				})
 				.then((data) => {
 					if(!setView) {
-						earth.setView(data.geometry.coordinates.reverse());
 						earth.panTo(data.geometry.coordinates.reverse());
 						setView = true;
 					}
@@ -49,7 +48,7 @@
 					}
 					const o = data.features[index];
 					var marker = WE.marker(o.geometry.coordinates.reverse(), '/diwata-opaque.png', 25, 25)
-					.addTo(earth);
+					.addTo(earth);o.geometry.coordinates.reverse();
 				}
 			})
 			.catch((err) => {
